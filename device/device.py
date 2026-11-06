@@ -60,7 +60,7 @@ class Device:
         keypath = f'{self.device_name}_key.pem'
         self.device_auth.register_device(
             access_token=access_token,
-            jointype=0, # 0 : join, 4 : register
+            jointype=4, # 0 : join, 4 : register
             certout=certpath,
             privout=keypath, 
             device_type=self.os,
@@ -109,6 +109,12 @@ class Device:
             csr_token = get_devicetoken(self.tenant, certpfx)
         else:
             csr_token = self.get_enrollment_token(refresh_token)
+
+        try:
+            _c = jwt.decode(csr_token, options={"verify_signature": False}, algorithms=['RS256'])
+            self.logger.debug(f"enrollment token: aud={_c.get('aud')} appid={_c.get('appid')} scp={_c.get('scp')} roles={_c.get('roles')} amr={_c.get('amr')} upn={_c.get('upn')} tid={_c.get('tid')}")
+        except Exception as _e:
+            self.logger.debug(f"enrollment token not a decodable JWT: {_e}")
 
         csr_der = self.create_csr(private_key, self.cname)
         csr_pem = base64.b64encode(csr_der).decode('utf-8')
